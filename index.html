@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#141716" />
+    <meta
+      name="description"
+      content="Draw pixel art, import ANSI text, and copy RGB ANSI."
+    />
+    <title>ANSEI — ANSI editor</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23141716'/%3E%3Cpath d='M6 18h10V8h10v18H6z' fill='%23d3f594'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="core.js?v=import-resolution-3" defer></script>
+    <script src="app.js?v=import-resolution-3" defer></script>
+  </head>
+  <body>
+    <main>
+      <div class="workspace">
+        <aside class="panel controls">
+          <div class="panel-title"><h2>Tools</h2></div>
+          <div class="tools" role="group" aria-label="Drawing tools">
+            <button
+              data-tool="brush"
+              class="tool active"
+              title="Brush (B)"
+              aria-pressed="true"
+            >
+              <span>✎</span>Brush<kbd>B</kbd>
+            </button>
+            <button
+              data-tool="eraser"
+              class="tool"
+              title="Eraser (E)"
+              aria-pressed="false"
+            >
+              <span>▱</span>Eraser<kbd>E</kbd>
+            </button>
+            <button
+              data-tool="fill"
+              class="tool"
+              title="Fill (F)"
+              aria-pressed="false"
+            >
+              <span>◩</span>Fill<kbd>F</kbd>
+            </button>
+            <button
+              data-tool="picker"
+              class="tool"
+              title="Eyedropper (I)"
+              aria-pressed="false"
+            >
+              <span>⌖</span>Pick<kbd>I</kbd>
+            </button>
+          </div>
+          <div class="section-label" id="color-heading">
+            COLOR <span>24-BIT RGB</span>
+          </div>
+          <div class="color-entry">
+            <input
+              type="color"
+              id="color"
+              value="#f68aaf"
+              aria-label="Choose color"
+            /><label class="hex-wrap"
+              ><span>HEX</span
+              ><input
+                id="hex"
+                value="#F68AAF"
+                maxlength="7"
+                aria-label="Hex color"
+                spellcheck="false"
+            /></label>
+          </div>
+          <div class="rgb-fields">
+            <label
+              >R<input
+                id="red"
+                type="number"
+                min="0"
+                max="255"
+                value="246" /></label
+            ><label
+              >G<input
+                id="green"
+                type="number"
+                min="0"
+                max="255"
+                value="138" /></label
+            ><label
+              >B<input id="blue" type="number" min="0" max="255" value="175"
+            /></label>
+          </div>
+          <div class="section-label" id="palette-heading">PALETTE</div>
+          <div id="palette" class="palette" aria-label="Color palette"></div>
+          <button id="add-color" class="quiet full">+ Add color</button>
+          <div class="divider"></div>
+          <div class="section-label">CANVAS SIZE <span>1–48 PX</span></div>
+          <div class="dimensions">
+            <label
+              >Width<input
+                id="width"
+                type="number"
+                min="1"
+                max="48"
+                value="16" /></label
+            ><span>×</span
+            ><label
+              >Height<input
+                id="height"
+                type="number"
+                min="1"
+                max="48"
+                value="16"
+            /></label>
+          </div>
+          <p class="micro" id="resize-note">
+            Press Enter or leave the field to resize.
+          </p>
+        </aside>
+        <section class="panel editor" id="canvas-drop-zone">
+          <div class="panel-title">
+            <div class="file-title">
+              <span class="dot"></span>
+              <h2 id="canvas-name">Canvas</h2>
+            </div>
+            <span id="canvas-size">16 × 16</span>
+          </div>
+          <div class="canvas-toolbar">
+            <div>
+              <button
+                id="undo"
+                class="icon-button"
+                title="Undo (Ctrl/Cmd+Z)"
+                aria-label="Undo"
+              >
+                ↶</button
+              ><button
+                id="redo"
+                class="icon-button"
+                title="Redo (Ctrl/Cmd+Shift+Z)"
+                aria-label="Redo"
+              >
+                ↷</button
+              ><span class="toolbar-separator"></span
+              ><label class="toggle"
+                ><input type="checkbox" id="grid" checked /> Grid</label
+              ><label class="toggle"
+                ><input type="checkbox" id="mirror" /> Mirror</label
+              >
+            </div>
+            <button id="clear" class="quiet">Clear canvas</button>
+          </div>
+          <div class="image-import-bar">
+            <button id="import-image" class="secondary">↥ Import image</button
+            ><span>Or drop an image directly onto the canvas.</span>
+          </div>
+          <p id="direct-import-status" class="micro" role="status" hidden></p>
+          <div class="canvas-stage">
+            <span class="canvas-drop-hint">Drop image to import</span>
+            <div class="canvas-frame">
+              <canvas
+                id="canvas"
+                width="512"
+                height="512"
+                tabindex="0"
+                role="img"
+                aria-label="Pixel art drawing canvas. Use arrow keys to move and Space to paint."
+              ></canvas>
+            </div>
+          </div>
+          <div class="canvas-footer">
+            <span id="coordinates">16 × 16 pixels · Brush</span>
+          </div>
+          <div class="example-bar">
+            <span>Examples</span
+            ><button id="sample-mushroom">🍄 Mushroom</button
+            ><button id="sample-heart">♥ Heart</button
+            ><button id="sample-sunset">◒ Sunset</button
+            ><button id="export-png" class="quiet">PNG ↓</button>
+          </div>
+        </section>
+        <aside class="panel output">
+          <div class="panel-title"><h2>Discord preview</h2></div>
+          <div class="art-preview-box">
+            <canvas
+              id="art-preview"
+              role="img"
+              aria-label="Preview of the copied ANSI art"
+            ></canvas>
+          </div>
+          <p class="micro">
+            Shows the colors in your copied art. Appearance may vary in Discord.
+          </p>
+          <div class="output-meta">
+            <span id="char-count" aria-live="polite"></span>
+          </div>
+          <div class="progress-track"><div id="progress"></div></div>
+          <p id="limit-note" class="micro" role="status" hidden></p>
+          <button id="auto-optimize" class="secondary full">
+            Auto optimize
+          </button>
+          <p id="optimize-status" class="micro" role="status" hidden></p>
+          <button id="copy" class="primary full">Copy ANSI</button>
+          <details class="compression-settings">
+            <summary>Compression settings</summary>
+            <p class="micro">
+              Exact colors by default. These options can make the message
+              shorter.
+            </p>
+            <label class="limit-label" for="limit">Message limit</label>
+            <select id="limit">
+              <option value="2000">2,000 characters</option>
+              <option value="4000">4,000 characters</option>
+            </select>
+            <label class="tolerance-label" for="color-tolerance"
+              >Merge similar colors
+              <output id="tolerance-value" for="color-tolerance"
+                >Exact</output
+              ></label
+            >
+            <input
+              id="color-tolerance"
+              type="range"
+              min="0"
+              max="64"
+              value="0"
+              step="1"
+              aria-describedby="tolerance-note"
+            />
+            <p class="micro" id="tolerance-note">
+              Optional: merge similar colors in the copied art. Canvas colors
+              stay unchanged.
+            </p>
+            <label class="toggle hybrid-toggle"
+              ><input id="hybrid-colors" type="checkbox" /> Use 256-color codes
+              for close matches</label
+            >
+            <div id="indexed-settings" hidden>
+              <label class="tolerance-label" for="indexed-tolerance"
+                >256-color similarity
+                <output id="indexed-value" for="indexed-tolerance"
+                  >8 / 255</output
+                ></label
+              >
+              <input
+                id="indexed-tolerance"
+                type="range"
+                min="0"
+                max="32"
+                value="8"
+                step="1"
+                aria-describedby="indexed-note"
+              />
+              <p class="micro" id="indexed-note">
+                0 matches exact palette colors only. Other colors stay RGB.
+                Tolerance is the maximum change per RGB channel.
+              </p>
+            </div>
+          </details>
+          <div class="divider"></div>
+          <details id="import-panel">
+            <summary>Import ANSI text</summary>
+            <label class="micro" for="ansi-import"
+              >Paste block art or an ANSI code block.</label
+            >
+            <textarea
+              id="ansi-import"
+              spellcheck="false"
+              placeholder="Paste ANSI here…"
+            ></textarea>
+            <p id="import-error" class="micro error" role="alert" hidden></p>
+            <button id="import-ansi" class="secondary full">
+              Import to canvas
+            </button>
+          </details>
+        </aside>
+      </div>
+    </main>
+    <dialog id="image-import-dialog" aria-labelledby="image-import-title">
+      <div class="import-dialog-heading">
+        <h2 id="image-import-title">Import image</h2>
+        <button
+          id="close-image-import"
+          class="quiet"
+          aria-label="Close image import"
+        >
+          ✕
+        </button>
+      </div>
+      <button id="image-drop-zone" class="image-drop-box" type="button">
+        <span class="upload-icon" aria-hidden="true">↥</span>
+        <strong>Drag an image here</strong>
+        <span>from your device or the web — or click to choose</span>
+      </button>
+      <section id="image-setup" hidden>
+        <div class="placement-preview">
+          <canvas
+            id="placement-preview"
+            tabindex="0"
+            aria-label="Image placement preview. Drag or use arrow keys to move the image."
+          ></canvas>
+        </div>
+        <p class="micro">
+          Drag to position. Arrow keys move one pixel. Anything outside the
+          canvas is cropped.
+        </p>
+        <label class="toggle resolution-link"
+          ><input id="place-resolution-link" type="checkbox" checked /> Link
+          canvas width and height</label
+        >
+        <div class="placement-fields">
+          <label
+            >Canvas width<input
+              id="place-cw"
+              type="number"
+              min="1"
+              max="48"
+              value="16"
+          /></label>
+          <label
+            >Canvas height<input
+              id="place-ch"
+              type="number"
+              min="1"
+              max="48"
+              value="16"
+          /></label>
+          <label
+            >Image width<input
+              id="place-w"
+              type="number"
+              min="1"
+              max="192"
+              value="16"
+          /></label>
+          <label
+            >Image height<input
+              id="place-h"
+              type="number"
+              min="1"
+              max="192"
+              value="16"
+          /></label>
+          <label
+            >Position X<input
+              id="place-x"
+              type="number"
+              min="-192"
+              max="192"
+              value="0"
+          /></label>
+          <label
+            >Position Y<input
+              id="place-y"
+              type="number"
+              min="-192"
+              max="192"
+              value="0"
+          /></label>
+        </div>
+        <label class="toggle"
+          ><input id="place-lock" type="checkbox" checked /> Keep image
+          proportions</label
+        >
+        <div class="placement-actions">
+          <button id="place-fit">Fit</button
+          ><button id="place-fill">Fill</button
+          ><button id="place-center">Center</button
+          ><button id="place-replace">Choose another</button>
+        </div>
+        <p class="micro">
+          Increasing canvas resolution redraws the original image with more
+          pixels. Placing replaces the canvas; Undo restores it.
+        </p>
+        <button id="place-apply" class="primary full">Place image</button>
+      </section>
+      <p
+        id="image-import-status"
+        class="micro"
+        role="status"
+        aria-live="polite"
+      ></p>
+      <input id="image-file" type="file" accept="image/*" hidden />
+    </dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
